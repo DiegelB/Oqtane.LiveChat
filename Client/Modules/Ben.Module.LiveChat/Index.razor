@@ -10,13 +10,14 @@
 <link rel="stylesheet" href="css/LiveChat.css" />
 
 <div class="chat-container">
-    <input @bind="message" @onkeyup="SendOnEnter" placeholder="Message" />
     <ul @ref="messageDiv" class="message-list">
         @foreach (var msg in messages)
         {
             <li>@msg</li>
         }
     </ul>
+    <input @bind="message" @onkeyup="SendOnEnter" placeholder="Message" />
+
 </div>
 
 <script>
