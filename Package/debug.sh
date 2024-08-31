@@ -1,0 +1,7 @@
+cp -f "../Client/bin/Debug/net8.0/Ben.Module.LiveChat.Client.Oqtane.dll" "../../oqtane.framework/Oqtane.Server/bin/Debug/net8.0/"
+cp -f "../Client/bin/Debug/net8.0/Ben.Module.LiveChat.Client.Oqtane.pdb" "../../oqtane.framework/Oqtane.Server/bin/Debug/net8.0/"
+cp -f "../Server/bin/Debug/net8.0/Ben.Module.LiveChat.Server.Oqtane.dll" "../../oqtane.framework/Oqtane.Server/bin/Debug/net8.0/"
+cp -f "../Server/bin/Debug/net8.0/Ben.Module.LiveChat.Server.Oqtane.pdb" "../../oqtane.framework/Oqtane.Server/bin/Debug/net8.0/"
+cp -f "../Shared/bin/Debug/net8.0/Ben.Module.LiveChat.Shared.Oqtane.dll" "../../oqtane.framework/Oqtane.Server/bin/Debug/net8.0/"
+cp -f "../Shared/bin/Debug/net8.0/Ben.Module.LiveChat.Shared.Oqtane.pdb" "../../oqtane.framework/Oqtane.Server/bin/Debug/net8.0/"
+cp -rf "../Server/wwwroot/"* "../../oqtane.framework/Oqtane.Server/wwwroot/"

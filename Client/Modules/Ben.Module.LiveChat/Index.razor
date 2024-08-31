@@ -1,0 +1,73 @@
+@namespace Ben.Module.LiveChat
+@inherits ModuleBase
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@using Microsoft.JSInterop
+@using Ben.Module.LiveChat.Services
+@using Ben.Module.LiveChat.Models
+
+<link rel="stylesheet" href="css/LiveChat.css" />
+
+<div class="chat-container">
+    
+    <ul @ref="messageDiv" class="message-list">
+        @foreach (var msg in messages)
+        {
+            <li>@msg</li>
+        }
+    </ul>
+
+</div>
+
+<script>
+    function scrollToBottom(element) {
+        element.scrollTop = element.scrollHeight;
+    }
+</script>
+
+@code {
+    private HubConnection hubConnection;
+    private string user;
+    private string message;
+    private List<string> messages = new List<string>();
+    private ElementReference messageDiv;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/chathub"))
+            .Build();
+
+        hubConnection.On<string, string>("ReceiveMessage", async (user, message) =>
+        {
+            var encodedMsg = $"{user}: {message}";
+            messages.Add(encodedMsg);
+            await InvokeAsync(StateHasChanged);
+            await ScrollToBottom(); // Scroll to the bottom after adding the message
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private async Task SendMessage()
+    {
+        user = PageState.User.Username;
+        user = DateTime.Now.ToString("hh:mm:ss tt") + " " + user;
+        await hubConnection.SendAsync("SendMessage", user, message);
+        message = string.Empty;
+    }
+
+    private async Task SendOnEnter(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(message))
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        await JS.InvokeVoidAsync("scrollToBottom", messageDiv);
+    }
+}
