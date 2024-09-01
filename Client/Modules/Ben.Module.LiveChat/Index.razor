@@ -9,6 +9,17 @@
 
 <link rel="stylesheet" href="css/LiveChat.css" />
 
+<div class="channel-selector">
+    <select @onchange="HandleChannelChange">
+        @foreach (var channel in channels)
+        {
+            <option value="@channel" selected="@(channel == selectedChannel)">
+                @channel
+            </option>
+        }
+    </select>
+</div>
+
 <div class="chat-container">
     <ul @ref="messageDiv" class="message-list">
         @foreach (var msg in messages)
@@ -17,8 +28,19 @@
         }
     </ul>
     <input @bind="message" @onkeyup="SendOnEnter" placeholder="Message" />
-
 </div>
+
+
+@* <div class="chat-container">
+    <ul @ref="messageDiv" class="message-list">
+        @foreach (var msg in messages)
+        {
+            <li>@msg</li>
+        }
+    </ul>
+    <input @bind="message" @onkeyup="SendOnEnter" placeholder="Message" />
+
+</div> *@
 
 <script>
     function scrollToBottom(element) {
@@ -30,8 +52,14 @@
     private HubConnection hubConnection;
     private string user;
     private string message;
-    private List<string> messages = new List<string>();
+
+    // Dictionary to store messages for each channel
+    private Dictionary<string, List<string>> channelMessages = new Dictionary<string, List<string>>();
     private ElementReference messageDiv;
+
+    // Channel management
+    private List<string> channels = new List<string> { "General", "Random", "Development" };
+    private string selectedChannel = "General";
 
     protected override async Task OnInitializedAsync()
     {
@@ -39,22 +67,35 @@
             .WithUrl(Navigation.ToAbsoluteUri("/chathub"))
             .Build();
 
-        hubConnection.On<string, string>("ReceiveMessage", async (user, message) =>
+        // Initialize message list for each channel
+        foreach (var channel in channels)
         {
-            var encodedMsg = $"{user}: {message}";
-            messages.Add(encodedMsg);
-            await InvokeAsync(StateHasChanged);
-            await ScrollToBottom(); // Scroll to the bottom after adding the message
+            channelMessages[channel] = new List<string>();
+        }
+
+        hubConnection.On<string, string, string>("ReceiveMessage", async (channel, user, message) =>
+        {
+            if (channelMessages.ContainsKey(channel))
+            {
+                var encodedMsg = $"{user}: {message}";
+                channelMessages[channel].Add(encodedMsg);
+                await InvokeAsync(StateHasChanged);
+                if (channel == selectedChannel)
+                {
+                    await ScrollToBottom(); // Scroll to the bottom only if the message is in the current channel
+                }
+            }
         });
 
         await hubConnection.StartAsync();
+        await hubConnection.SendAsync("JoinChannel", selectedChannel);
     }
 
     private async Task SendMessage()
     {
         user = PageState.User.Username;
         user = DateTime.Now.ToString("hh:mm:ss tt") + " " + user;
-        await hubConnection.SendAsync("SendMessage", user, message);
+        await hubConnection.SendAsync("SendMessage", selectedChannel, user, message);
         message = string.Empty;
     }
 
@@ -66,8 +107,21 @@
         }
     }
 
+    private async Task HandleChannelChange(ChangeEventArgs e)
+    {
+        selectedChannel = e.Value.ToString();
+        await hubConnection.SendAsync("JoinChannel", selectedChannel);
+        await InvokeAsync(StateHasChanged);
+        await ScrollToBottom();
+    }
+
+    private List<string> messages => channelMessages.ContainsKey(selectedChannel)
+                                        ? channelMessages[selectedChannel]
+                                        : new List<string>();
+
     private async Task ScrollToBottom()
     {
         await JS.InvokeVoidAsync("scrollToBottom", messageDiv);
     }
 }
+
